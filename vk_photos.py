@@ -35,6 +35,7 @@ import argparse
 import datetime
 import os
 import sys
+import time
 
 import requests
 import vk_api
@@ -142,13 +143,12 @@ def del_restricted_symbols(album_title):
 
     # Symbols that are not allowed in Windows dir names
     # Change title to prevent exceptions during download
-    sym_replace = {'"': '[=]', ':': '[$]', '&': '[@]', '.': '[_]', '|': '[!]', '\\': '[#]',
-                   '/': '[-]', '*': '[+]', '?': '[%]', '<': '[(]', '>': '[)]'}
-    title = album_title
+    sym_replace = {'"', ':', '&', '.', '|', '\\', '/', '*', '?', '<', '>'}
+    title = album_title.strip()
 
     for s in title:
         if s in sym_replace:
-            title = sym_replace[s].join(title.split(s))
+            title = '-'.join(title.split(s))
 
     return title
 
@@ -312,30 +312,55 @@ if __name__ == '__main__':
                 owner_id = get_owner_id(connection, screen_name, False)
 
             if args_dict['main']:
-                albums = connection.method('photos.getAlbums', {'owner_id': owner_id})
+                try:
+                    albums = connection.method('photos.getAlbums', {'owner_id': owner_id})
 
-                for album in albums['items']:
-                    print('\n{}. Num of photos: {}.'.format(album['title'], album['size']))
-                    download_album(connection, args_dict['output_dir'], owner_id,
-                                   album['title'], album['size'], album['id'], False)
+                    for album in albums['items']:
+                        print('\n{}. Num of photos: {}.'.format(album['title'], album['size']))
+                        download_album(connection, args_dict['output_dir'], owner_id,
+                                       album['title'], album['size'], album['id'], False)
+
+                        # VK API allows to do 3 queries per sec
+                        time.sleep(1)
+
+                except vk_api.exceptions.ApiError as vk_e:
+                    print('\n(--main) album', vk_e)
 
             if args_dict['page'] == 'user' and args_dict['tagged']:
-                album_size = get_album_size(connection, owner_id)
-                print('\n{}. Num of photos: {}.'.format('Photos the user is tagged on', album_size))
-                download_album(connection, args_dict['output_dir'], owner_id,
-                               'Photos the user is tagged on', album_size)
+                try:
+                    album_size = get_album_size(connection, owner_id)
+                    print('\n{}. Num of photos: {}.'.format('Photos the user is tagged on', album_size))
+                    download_album(connection, args_dict['output_dir'], owner_id,
+                                   'Photos the user is tagged on', album_size)
+
+                    time.sleep(1)
+
+                except vk_api.exceptions.ApiError as vk_e:
+                    print('\n(--tagged) album', vk_e)
 
             if args_dict['system_wall']:
-                album_size = get_album_size(connection, owner_id, 'wall', False)
-                print('\n{}. Num of photos: {}.'.format('Photos from the wall', album_size))
-                download_album(connection, args_dict['output_dir'], owner_id,
-                               'Photos from the wall', album_size, 'wall', False)
+                try:
+                    album_size = get_album_size(connection, owner_id, 'wall', False)
+                    print('\n{}. Num of photos: {}.'.format('Photos from the wall', album_size))
+                    download_album(connection, args_dict['output_dir'], owner_id,
+                                   'Photos from the wall', album_size, 'wall', False)
+
+                    time.sleep(1)
+
+                except vk_api.exceptions.ApiError as vk_e:
+                    print('\n(--system_wall) album', vk_e)
 
             if args_dict['system_profile']:
-                album_size = get_album_size(connection, owner_id, 'profile', False)
-                print('\n{}. Num of photos: {}.'.format('Profile photos', album_size))
-                download_album(connection, args_dict['output_dir'], owner_id,
-                               'Profile photos', album_size, 'profile', False)
+                try:
+                    album_size = get_album_size(connection, owner_id, 'profile', False)
+                    print('\n{}. Num of photos: {}.'.format('Profile photos', album_size))
+                    download_album(connection, args_dict['output_dir'], owner_id,
+                                   'Profile photos', album_size, 'profile', False)
+
+                    time.sleep(1)
+
+                except vk_api.exceptions.ApiError as vk_e:
+                    print('\n(--system_profile) album', vk_e)
 
             if args_dict['system_saved']:
                 try:
@@ -344,15 +369,21 @@ if __name__ == '__main__':
                     download_album(connection, args_dict['output_dir'], owner_id,
                                    'Saved photos', album_size, 'saved', False)
                 except vk_api.exceptions.ApiError as vk_e:
-                    print('\nSaved photos:', vk_e)
+                    print('\n(--system_saved) album', vk_e)
 
-    except Exception as e:
-        print(e)
-        sys.exit(1)
+    except vk_api.exceptions.ApiError as vk_e:
+        print(vk_e)
 
     except KeyboardInterrupt:
         print('\nStopped by the user.')
         sys.exit()
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(e)
+        print(exc_type, fname, exc_tb.tb_lineno)
+        sys.exit(1)
 
     finally:
         print("\nDone.")
