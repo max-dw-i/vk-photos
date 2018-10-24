@@ -1,4 +1,4 @@
-"""Download the photos from a user, group vk.com page or album.
+"""Download the photos from a user, group vk.com page or any particular album.
 
 usage: vk_photos.py [-h] [-a ALBUM] [-u USER_PAGE] [-g GROUP_PAGE] [-m] [-s]
                     [-sw] [-sp] [-ss] [-t]
@@ -46,7 +46,7 @@ def download_album(connection, output_path, owner_id, album_title, album_size, a
 
     Parameters:
     -----------
-    :connection: connection object, vk_api.VkApi(...) instance;
+    :connection: vk_api.VkApi(...) instance, connection object;
     :output_path: str, path where to save the photos;
     :owner_id: int, id of the group/user;
     :album_title: str, the album title;
@@ -83,9 +83,9 @@ def download_photos(photos, output_path, offset):
 
     Parameters:
     -----------
-    :photos: list containing VK API 'photo objects' (a dictionaries);
-    :output_path: path where to save the photos;
-    :offset: VK API 'offset' parameter.
+    :photos: list, contains VK API 'photo objects' (a dictionaries);
+    :output_path: str, path where to save the photos;
+    :offset: int, VK API 'offset' parameter.
     """
 
     for i, photo in enumerate(photos):
@@ -108,17 +108,17 @@ def download_photos(photos, output_path, offset):
         photo_date = datetime.datetime.fromtimestamp(photo['date']).strftime('%Y%m%d@%H%M')
         photo_title = '{}_{}'.format(photo_date, photo['id'])
 
-        p = requests.get(url, timeout=None)
+        response = requests.get(url, timeout=None)
 
-        with open(os.path.join(output_path, '{}.jpg'.format(photo_title)), 'wb') as f:
-            f.write(p.content)
+        with open(os.path.join(output_path, '{}.jpg'.format(photo_title)), 'wb') as photo_file:
+            photo_file.write(response.content)
 
 def get_album_size(connection, owner_id, album_id=0, tagged=True):
     """Returns the size of an album.
 
     Parameters:
     -----------
-    :connection: connection object, vk_api.VkApi(...) instance;
+    :connection: vk_api.VkApi(...) instance, connection object;
     :owner_id: int, id of the group/user;
     :album_id: int, id of the album or 0 if it's the album with 'tagged' photos;
     :tagged: bool, True if the album is the one with the photos the user has been tagged on;
@@ -157,7 +157,7 @@ def get_owner_id(connection, screen_name, user=False):
 
     Parameters:
     -----------
-    :connection: connection object, vk_api.VkApi(...) instance;
+    :connection: vk_api.VkApi(...) instance, connection object;
     :screen_name: str, name of a user or group page we get from a link
     (e.g. https://vk.com/azino777, azino777 is the screen name);
     :user: bool, True if it's a user page, False if it's a group page;
@@ -165,14 +165,11 @@ def get_owner_id(connection, screen_name, user=False):
     """
 
     if user:
-        # Get a list of user objects (in our case, one object)
         user_objs = connection.method('users.get', {'user_ids': screen_name})
-        # Get the id of the user
         return user_objs[0]['id']
     else:
-        # Get a list of group objects (in our case, one object)
         group_objs = connection.method('groups.getById', {'group_id': screen_name})
-        # Get the id of the group (an id must be negative if it's a group)
+        # id must be negative if it's a group
         return group_objs[0]['id'] * (-1)
 
 def arg_handler(args):
@@ -181,15 +178,15 @@ def arg_handler(args):
     Parameters:
     -----------
     :args: argparse.Namespace object;
-    :returns: dictionary {'username': str, VK login, 'password': str, VK password,
-                          'output_dir': str, directory to save photos in,
-                          'page': str, 'album' or 'user' or 'group',
-                          'link': str, link to a album/user/group page,
-                          'main': bool, group/user albums,
-                          'system_wall': bool, photos from the wall,
+    :returns: dictionary {'username':      str,  VK login, 'password': str, VK password,
+                          'output_dir':    str,  directory to save photos in,
+                          'page':          str,  'album' or 'user' or 'group',
+                          'link':          str,  link to a album/user/group page,
+                          'main':          bool, group/user albums,
+                          'system_wall':   bool, photos from the wall,
                           'system_profile: bool, profile photos,
-                          'system_saved': bool, saved by user/group photos,
-                          'tagged': bool, photos the user is tagged on}
+                          'system_saved':  bool, saved by user/group photos,
+                          'tagged':        bool, photos the user is tagged on}
     """
 
     params = {'username': args.username,
@@ -257,7 +254,7 @@ def link_parse(link, page):
 if __name__ == '__main__':
 
     # ---------------------------------------------------------
-    # VK API returns only 1000 photos in one response (at least now)
+    # VK API returns only 1000 photos in one response
     MAX_PHOTO_NUM = 1000
     # ---------------------------------------------------------
 
