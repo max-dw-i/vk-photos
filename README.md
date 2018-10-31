@@ -1,5 +1,7 @@
 # VK Photos
 
+[English](https://github.com/oratosquilla-oratoria/vk-photos/blob/master/README.md) | [Русский](https://github.com/oratosquilla-oratoria/vk-photos/blob/master/README.ru.md)
+
 A script downloading the photographs from a user or group page or any particular album on vk.com.
 
 ## Features
@@ -43,16 +45,14 @@ optional arguments:
   -m, --main            download the group/user albums
   -s, --system_all      download the system albums
   -sw, --system_wall    download the photos from the wall (system album)
-  -sp, --system_profile
-                        download the profile photos (system album)
+  -sp, --system_profile download the profile photos (system album)
   -ss, --system_saved   download the saved photos (system album)
   -t, --tagged          download the photos the user is tagged on
 ```
 
-You'll get all the photos from the page if you don't use any positional
-arguments.
+You'll get all the photos from the page if you don't use any optional arguments.
 
-For example, to get all the photos from a user page (https://vk.com/id1) (all the albums,
+For example, to get all the photos from a user page https://vk.com/id1 (all the albums,
 including system and 'tagged') and save them in 'C:\photos' (let 'mail@mail.com' and 'mypass'
 be your login and password):
 ```bash
